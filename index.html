@@ -266,4 +266,210 @@ function load() {
 }
 
 function save() {
-  local
+  localStorage.setItem('rota-'+current.getFullYear()+'-'+(current.getMonth()+1), JSON.stringify(data));
+}
+
+function getMonday(d) {
+  d = new Date(d);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day); // Sunday → -6, Monday → 0, etc.
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function render() {
+  document.getElementById('monthTitle').textContent = current.toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  const y = current.getFullYear(), m = current.getMonth();
+  const firstOfMonth = new Date(y, m, 1);
+  const mondayOfFirstWeek = getMonday(firstOfMonth);
+  const daysToShow = 42; // 6 full weeks (Mon-Sun)
+
+  let date = new Date(mondayOfFirstWeek);
+  for (let i = 0; i < daysToShow; i++) {
+    const key = dk(date);
+    const inMonth = date.getMonth() === m;
+    const isToday = key === dk(new Date());
+
+    const cell = document.createElement('div');
+    cell.className = 'day' + (inMonth ? '' : ' other');
+    if (inMonth) cell.onclick = () => openModal(key, date);
+
+    const num = document.createElement('div');
+    num.className = 'day-number';
+    num.textContent = date.getDate();
+    cell.appendChild(num);
+
+    if (inMonth && isToday) cell.classList.add('today');
+
+    const entry = data[key];
+    if (entry) {
+      if (entry.type === 'holiday') {
+        cell.classList.add('holiday-day');
+      } else {
+        const hasJ = !!entry.jordan;
+        const hasI = !!entry.iryna;
+        if (hasJ && hasI) cell.classList.add('both-day');
+        else if (hasJ) cell.classList.add('jordan-day');
+        else if (hasI) cell.classList.add('iryna-day');
+      }
+    }
+
+    grid.appendChild(cell);
+
+    // Week summary after Sunday
+    if (date.getDay() === 0) {  // Sunday
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - 6); // Monday
+      let jh = 0, ih = 0;
+
+      for (let wd = 0; wd < 7; wd++) {
+        const dd = new Date(weekStart);
+        dd.setDate(weekStart.getDate() + wd);
+        const k = dk(dd);
+        const e = data[k];
+        if (e && e.type !== 'holiday') {
+          if (e.jordan) jh += calc(e.jordan.start, e.jordan.end, e.jordan.breakMins);
+          if (e.iryna)  ih += calc(e.iryna.start,  e.iryna.end,  e.iryna.breakMins);
+        }
+      }
+
+      const row = document.createElement('div');
+      row.className = 'week-summary';
+      row.innerHTML = `
+        w/c ${weekStart.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}:
+        <span class="hours-badge j-badge${jh>0&&jh<40?' err':''}">Jordan: ${jh.toFixed(1)}h${jh>0&&jh<40?' ⚠ <40':''}</span>
+        <span class="hours-badge i-badge${ih>0&&ih<12?' err':''}">Iryna: ${ih.toFixed(1)}h${ih>0&&ih<12?' ⚠ <12':''}</span>
+      `;
+      grid.appendChild(row);
+
+      // Apply error highlight to days in this week (only in current month)
+      if ((jh>0&&jh<40) || (ih>0&&ih<12)) {
+        for (let wd = 0; wd < 7; wd++) {
+          const dd = new Date(weekStart);
+          dd.setDate(weekStart.getDate() + wd);
+          if (dd.getMonth() === m) {
+            const cellIndex = i - (6 - wd);
+            const c = grid.children[cellIndex];
+            if (c) c.classList.add('week-error');
+          }
+        }
+      }
+    }
+
+    date.setDate(date.getDate() + 1);
+  }
+}
+
+function calc(s, e, b=30) {
+  if (!s || !e) return 0;
+  const [sh,sm] = s.split(':').map(Number);
+  const [eh,em] = e.split(':').map(Number);
+  let m = (eh*60 + em) - (sh*60 + sm) - Number(b);
+  if (m < 0) m += 1440;
+  return m / 60;
+}
+
+function prevMonth() { current.setMonth(current.getMonth()-1); load(); }
+function nextMonth() { current.setMonth(current.getMonth()+1); load(); }
+
+let editingKey = null;
+
+function openModal(key, date) {
+  editingKey = key;
+  document.getElementById('modalDate').textContent = date.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  document.getElementById('modal').style.display = 'flex';
+
+  ['jordan','iryna','holiday'].forEach(p => {
+    const btn = document.getElementById('btn'+p[0].toUpperCase());
+    btn.classList.remove('active-'+p[0]);
+  });
+  document.getElementById('jordanForm').style.display = 'none';
+  document.getElementById('irynaForm').style.display = 'none';
+  document.getElementById('holidayForm').style.display = 'none';
+  document.getElementById('clearBtn').style.display = 'none';
+
+  const entry = data[key];
+  if (entry) {
+    document.getElementById('clearBtn').style.display = 'inline-block';
+    if (entry.type === 'holiday') {
+      document.getElementById('btnH').classList.add('active-h');
+      document.getElementById('holidayForm').style.display = 'block';
+      document.getElementById('hWho').value = entry.holiday?.person || 'both';
+    } else {
+      if (entry.jordan) {
+        document.getElementById('btnJ').classList.add('active-j');
+        document.getElementById('jordanForm').style.display = 'block';
+        document.getElementById('jStart').value = entry.jordan.start || '';
+        document.getElementById('jEnd').value   = entry.jordan.end   || '';
+        document.getElementById('jBreak').value = entry.jordan.breakMins ?? 30;
+      }
+      if (entry.iryna) {
+        document.getElementById('btnI').classList.add('active-i');
+        document.getElementById('irynaForm').style.display = 'block';
+        document.getElementById('iStart').value = entry.iryna.start || '';
+        document.getElementById('iEnd').value   = entry.iryna.end   || '';
+        document.getElementById('iBreak').value = entry.iryna.breakMins ?? 30;
+      }
+    }
+  }
+}
+
+function selectPerson(p) {
+  ['jordan','iryna','holiday'].forEach(x => {
+    document.getElementById('btn'+x[0].toUpperCase()).classList.remove('active-'+x[0]);
+    document.getElementById(x+'Form').style.display = 'none';
+  });
+  document.getElementById('btn'+p[0].toUpperCase()).classList.add('active-'+p[0]);
+  document.getElementById(p+'Form').style.display = 'block';
+}
+
+function saveDay() {
+  if (!editingKey) return;
+  const entry = {};
+
+  if (document.getElementById('holidayForm').style.display !== 'none') {
+    entry.type = 'holiday';
+    entry.holiday = { person: document.getElementById('hWho').value };
+  } else {
+    if (document.getElementById('jordanForm').style.display !== 'none') {
+      const s = document.getElementById('jStart').value;
+      const e = document.getElementById('jEnd').value;
+      if (s && e) entry.jordan = { start:s, end:e, breakMins: Number(document.getElementById('jBreak').value) };
+    }
+    if (document.getElementById('irynaForm').style.display !== 'none') {
+      const s = document.getElementById('iStart').value;
+      const e = document.getElementById('iEnd').value;
+      if (s && e) entry.iryna = { start:s, end:e, breakMins: Number(document.getElementById('iBreak').value) };
+    }
+  }
+
+  if (Object.keys(entry).length > 0) data[editingKey] = entry;
+  else delete data[editingKey];
+
+  save();
+  closeModal();
+  render();
+}
+
+function clearDay() {
+  if (editingKey && confirm('Clear this day?')) {
+    delete data[editingKey];
+    save();
+    closeModal();
+    render();
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  editingKey = null;
+}
+
+load();
+</script>
+</body>
+</html>
