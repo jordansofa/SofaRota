@@ -3,18 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Rota - Sofa.com Norwich</title>
+<title>Rota</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#f5f5f7">
+
 <style>
 body{
 font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;
-margin:0;background:#f5f5f7;color:#1d1d1f;-webkit-font-smoothing:antialiased;
+margin:0;background:#f5f5f7;color:#1d1d1f;
+-webkit-font-smoothing:antialiased;
 overscroll-behavior-x:none;
 }
 
-.header{display:flex;justify-content:center;align-items:center;padding:24px 20px 8px;}
-.month-title{font-size:28px;font-weight:600;letter-spacing:-.5px;}
+.header{
+display:flex;
+justify-content:center;
+align-items:center;
+padding:24px 20px 12px;
+}
+
+.month-title{
+font-size:28px;
+font-weight:600;
+letter-spacing:-.5px;
+}
 
 #grid{
 display:grid;
@@ -26,15 +38,38 @@ touch-action:pan-y;
 }
 
 .day{
-background:white;border-radius:18px;min-height:90px;padding:10px;
-position:relative;cursor:pointer;transition:all .15s ease;
+background:white;
+border-radius:18px;
+min-height:90px;
+padding:10px;
+position:relative;
+cursor:pointer;
+transition:all .15s ease;
 box-shadow:0 1px 2px rgba(0,0,0,.04);
 }
-.day:hover{transform:scale(1.04);box-shadow:0 6px 18px rgba(0,0,0,.08);}
-.day:active{transform:scale(.95);}
-.day.other{opacity:.3;cursor:default;}
-.day-number{font-size:14px;font-weight:500;}
-.today{border:2px solid #007aff;}
+
+.day:hover{
+transform:scale(1.04);
+box-shadow:0 6px 18px rgba(0,0,0,.08);
+}
+
+.day:active{
+transform:scale(.95);
+}
+
+.day.other{
+opacity:.3;
+cursor:default;
+}
+
+.day-number{
+font-size:14px;
+font-weight:500;
+}
+
+.today{
+border:2px solid #007aff;
+}
 
 .jordan-day{background:#eaf3ff;}
 .iryna-day{background:#f5eaff;}
@@ -42,70 +77,99 @@ box-shadow:0 1px 2px rgba(0,0,0,.04);
 .holiday-day{background:#ffecec;}
 .week-error{border:2px solid #ff3b30;}
 
-.week-summary{
-grid-column:span 7;
-font-size:14px;padding:8px 12px;border-radius:14px;
-background:#f2f2f7;display:flex;justify-content:space-between;
-}
-
-.hours-badge{padding:4px 10px;border-radius:999px;font-size:13px;font-weight:500;}
-.j-badge{background:#dbeafe;}
-.i-badge{background:#f3e8ff;}
-.err{background:#ffe5e5!important;}
-
 #modal{
-position:fixed;inset:0;background:rgba(0,0,0,.3);
-backdrop-filter:blur(20px);display:none;align-items:center;justify-content:center;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.3);
+backdrop-filter:blur(20px);
+display:none;
+align-items:center;
+justify-content:center;
 }
 
 .modal-content{
-background:rgba(255,255,255,.9);
+background:rgba(255,255,255,.95);
 backdrop-filter:blur(30px);
-border-radius:24px;padding:24px;width:360px;
+border-radius:24px;
+padding:24px;
+width:360px;
 box-shadow:0 20px 40px rgba(0,0,0,.15);
 animation:slideUp .18s ease;
 }
-@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-button{font-family:inherit;border-radius:14px;padding:8px 14px;border:none;cursor:pointer;transition:all .15s ease;}
+@keyframes slideUp{
+from{transform:translateY(10px);opacity:0}
+to{transform:translateY(0);opacity:1}
+}
+
+button{
+font-family:inherit;
+border-radius:14px;
+padding:8px 14px;
+border:none;
+cursor:pointer;
+transition:all .15s ease;
+}
+
 button:hover{transform:scale(1.05);}
+
 .primary-btn{background:#007aff;color:white;}
 .secondary-btn{background:#e5e5ea;}
 .danger-btn{background:#ff3b30;color:white;}
+
 form{margin-top:12px;}
 label{font-size:13px;display:block;margin-top:8px;}
-.actions{display:flex;justify-content:space-between;margin-top:18px;}
+input,select{
+padding:6px;
+border-radius:8px;
+border:1px solid #ddd;
+font-family:inherit;
+}
+
+.actions{
+display:flex;
+justify-content:space-between;
+margin-top:18px;
+}
 </style>
 </head>
+
 <body>
+
 <div class="header">
 <div id="monthTitle" class="month-title"></div>
 </div>
+
 <div id="grid"></div>
+
 <div id="modal">
 <div class="modal-content">
 <h3 id="modalDate"></h3>
+
 <div style="margin-top:12px;">
 <button onclick="selectPerson('jordan')" class="secondary-btn">Jordan</button>
 <button onclick="selectPerson('iryna')" class="secondary-btn">Iryna</button>
 <button onclick="selectPerson('holiday')" class="secondary-btn">Holiday</button>
 </div>
+
 <form id="jordanForm" style="display:none;">
 <label>Start</label>
 <input type="time" id="jStart">
 <label>End</label>
 <input type="time" id="jEnd">
-<label>Break</label>
+<label>Break (mins)</label>
 <input type="number" id="jBreak" value="30">
 </form>
+
 <form id="irynaForm" style="display:none;">
 <label>Start</label>
 <input type="time" id="iStart">
 <label>End</label>
 <input type="time" id="iEnd">
-<label>Break</label>
+<label>Break (mins)</label>
 <input type="number" id="iBreak" value="30">
 </form>
+
 <form id="holidayForm" style="display:none;">
 <label>Who</label>
 <select id="hWho">
@@ -114,6 +178,7 @@ label{font-size:13px;display:block;margin-top:8px;}
 <option value="iryna">Iryna</option>
 </select>
 </form>
+
 <div class="actions">
 <button onclick="clearDay()" class="danger-btn">Clear</button>
 <div>
@@ -123,6 +188,7 @@ label{font-size:13px;display:block;margin-top:8px;}
 </div>
 </div>
 </div>
+
 <script>
 let current=new Date();
 let data={};
@@ -150,26 +216,25 @@ return new Date(d);
 function render(){
 document.getElementById('monthTitle').textContent=current.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
 const grid=document.getElementById('grid');
+grid.style.opacity=0;
+grid.style.transform='translateY(4px)';
+setTimeout(()=>{
 grid.innerHTML='';
 const y=current.getFullYear(),m=current.getMonth();
 let date=getMonday(new Date(y,m,1));
-
 for(let i=0;i<42;i++){
 const key=dk(date);
 const inMonth=date.getMonth()===m;
 const cell=document.createElement('div');
 cell.className='day'+(inMonth?'':' other');
-
 if(inMonth){
 cell.onclick=()=>openModal(key,new Date(date));
 attachLongPress(cell,key);
 }
-
 const num=document.createElement('div');
 num.className='day-number';
 num.textContent=date.getDate();
 cell.appendChild(num);
-
 const entry=data[key];
 if(entry){
 if(entry.type==='holiday')cell.classList.add('holiday-day');
@@ -179,24 +244,18 @@ else if(entry.jordan)cell.classList.add('jordan-day');
 else if(entry.iryna)cell.classList.add('iryna-day');
 }
 }
-
+if(key===dk(new Date())&&inMonth)cell.classList.add('today');
 grid.appendChild(cell);
 date.setDate(date.getDate()+1);
 }
-}
-
-function calc(s,e,b=30){
-if(!s||!e)return 0;
-const [sh,sm]=s.split(':').map(Number);
-const [eh,em]=e.split(':').map(Number);
-let mins=(eh*60+em)-(sh*60+sm)-Number(b);
-if(mins<0)mins+=1440;
-return mins/60;
+grid.style.opacity=1;
+grid.style.transform='translateY(0)';
+},120);
 }
 
 function openModal(key,dateObj){
 editingKey=key;
-document.getElementById('modalDate').textContent=dateObj.toDateString();
+document.getElementById('modalDate').textContent=dateObj.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 document.getElementById('modal').style.display='flex';
 }
 
@@ -210,7 +269,6 @@ document.getElementById(p+'Form').style.display='block';
 function saveDay(){
 if(!editingKey)return;
 const entry={};
-
 if(document.getElementById('holidayForm').style.display!=='none'){
 entry.type='holiday';
 entry.holiday={person:document.getElementById('hWho').value};
@@ -220,10 +278,8 @@ if(jS&&jE)entry.jordan={start:jS,end:jE,breakMins:Number(jBreak.value||30)};
 const iS=iStart.value,iE=iEnd.value;
 if(iS&&iE)entry.iryna={start:iS,end:iE,breakMins:Number(iBreak.value||30)};
 }
-
 if(Object.keys(entry).length>0)data[editingKey]=entry;
 else delete data[editingKey];
-
 save();closeModal();render();
 }
 
@@ -234,7 +290,10 @@ delete data[editingKey];
 save();closeModal();render();
 }
 
-function closeModal(){document.getElementById('modal').style.display='none';editingKey=null;}
+function closeModal(){
+document.getElementById('modal').style.display='none';
+editingKey=null;
+}
 
 document.getElementById('modal').addEventListener('click',e=>{
 if(e.target.id==='modal')closeModal();
@@ -242,10 +301,11 @@ if(e.target.id==='modal')closeModal();
 
 /* SWIPE NAVIGATION */
 let startX=0;
-document.getElementById('grid').addEventListener('touchstart',e=>{
+const grid=document.getElementById('grid');
+grid.addEventListener('touchstart',e=>{
 startX=e.touches[0].clientX;
 });
-document.getElementById('grid').addEventListener('touchend',e=>{
+grid.addEventListener('touchend',e=>{
 let diff=e.changedTouches[0].clientX-startX;
 if(Math.abs(diff)>60){
 if(diff<0)current.setMonth(current.getMonth()+1);
@@ -272,11 +332,12 @@ el.addEventListener('touchend',()=>clearTimeout(timer));
 }
 
 /* PWA */
-if('serviceWorker'in navigator){
+if('serviceWorker' in navigator){
 navigator.serviceWorker.register('service-worker.js');
 }
 
 load();
 </script>
+
 </body>
 </html>
