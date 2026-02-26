@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Rota</title>
+
+<style>
+:root{
+--bg:#f5f5f7;
+--card:#ffffff;
+--text:#1d1d1f;
+
+--jordan:#d6ecff;
+--iryna:#ffd6ec;
+--holiday:#fff4b8;
+--spare:#d9f7d9;
+--error:#ff3b30;
+}
+
+body.dark{
+--bg:#1c1c1e;
+--card:#2c2c2e;
+--text:#ffffff;
+}
+
+body{
+margin:0;
+background:var(--bg);
+color:var(--text);
+font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif;
+transition:.25s;
+}
+
+/* HEADER */
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:40px 20px 10px;
+}
+
+.title{
+font-size:32px;
+font-weight:700;
+}
+
+.toggle{
+background:var(--card);
+border:none;
+padding:8px 14px;
+border-radius:14px;
+cursor:pointer;
+}
+
+/* MONTH */
+.month-nav{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:10px 20px 20px;
+}
+
+.month-title{
+font-size:24px;
+font-weight:600;
+}
+
+.nav-btn{
+background:var(--card);
+border:none;
+padding:8px 14px;
+border-radius:14px;
+cursor:pointer;
+}
+
+/* GRID */
+#grid{
+display:grid;
+grid-template-columns:repeat(7,1fr);
+gap:12px;
+padding:20px;
+}
+
+.day{
+background:var(--card);
+border-radius:20px;
+min-height:90px;
+padding:10px;
+cursor:pointer;
+transition:.15s;
+}
+
+.day.other{opacity:.3;cursor:default;}
+.day:hover{transform:scale(1.05);}
+.day:active{transform:scale(.95);}
+
+.day-number{font-size:14px;}
+
+.jordan-day{background:var(--jordan);}
+.iryna-day{background:var(--iryna);}
+.holiday-day{background:var(--holiday);}
+.spare-day{background:var(--spare);}
+.error-week{border:2px solid var(--error);}
+
+/* MODAL */
+#modal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.3);
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+.modal-content{
+background:var(--card);
+padding:24px;
+border-radius:20px;
+width:340px;
+}
+
+select{
+width:100%;
+padding:8px;
+margin-top:6px;
+margin-bottom:10px;
+border-radius:10px;
+border:1px solid #ccc;
+}
+
+button{
+font-family:inherit;
+border:none;
+border-radius:12px;
+padding:8px 12px;
+cursor:pointer;
+}
+.primary{background:#007aff;color:white;}
+.secondary{background:#e5e5ea;}
+.danger{background:#ff3b30;color:white;}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<div class="title">Rota</div>
+<button class="toggle" onclick="toggleDark()">🌙</button>
+</div>
+
+<div class="month-nav">
+<button class="nav-btn" onclick="prevMonth()">‹</button>
+<div id="monthTitle" class="month-title"></div>
+<button class="nav-btn" onclick="nextMonth()">›</button>
+</div>
+
+<div id="grid"></div>
+
+<div id="modal">
+<div class="modal-content">
+<h3 id="modalDate"></h3>
+
+<select id="personSelect">
+<option value="">Select Type</option>
+<option value="jordan">Jordan</option>
+<option value="iryna">Iryna</option>
+<option value="holiday">Holiday</option>
+<option value="spare">Spare</option>
+</select>
+
+<div id="timeSection" style="display:none;">
+<label>Start</label>
+<select id="startTime"></select>
+<label>End</label>
+<select id="endTime"></select>
+</div>
+
+<div style="margin-top:10px;">
+<button class="danger" onclick="clearDay()">Clear</button>
+<button class="secondary" onclick="closeModal()">Cancel</button>
+<button class="primary" onclick="saveDay()">Save</button>
+</div>
+
+</div>
+</div>
+
+<script>
+let current=new Date();
+let data={};
+let editingKey=null;
+
+function dk(d){return d.toISOString().split('T')[0];}
+
+function generateTimes(){
+const selectStart=document.getElementById("startTime");
+const selectEnd=document.getElementById("endTime");
+selectStart.innerHTML="";
+selectEnd.innerHTML="";
+for(let h=0;h<24;h++){
+for(let m=0;m<60;m+=15){
+let hh=h.toString().padStart(2,'0');
+let mm=m.toString().padStart(2,'0');
+let t=hh+":"+mm;
+let opt1=new Option(t,t);
+let opt2=new Option(t,t);
+selectStart.add(opt1);
+selectEnd.add(opt2);
+}
+}
+}
+
+function load(){
+data=JSON.parse(localStorage.getItem('rota-'+current.getFullYear()+'-'+current.getMonth())||'{}');
+render();
+}
+
+function save(){
+localStorage.setItem('rota-'+current.getFullYear()+'-'+current.getMonth(),JSON.stringify(data));
+}
+
+function render(){
+document.getElementById('monthTitle').textContent=current.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+const grid=document.getElementById('grid');
+grid.innerHTML='';
+let date=new Date(current.getFullYear(),current.getMonth(),1);
+while(date.getMonth()===current.getMonth()){
+const key=dk(date);
+const cell=document.createElement('div');
+cell.className='day';
+cell.onclick=()=>openModal(key,new Date(date));
+cell.innerHTML="<div class='day-number'>"+date.getDate()+"</div>";
+if(data[key]){
+if(data[key].type==='jordan')cell.classList.add('jordan-day');
+if(data[key].type==='iryna')cell.classList.add('iryna-day');
+if(data[key].type==='holiday')cell.classList.add('holiday-day');
+if(data[key].type==='spare')cell.classList.add('spare-day');
+}
+grid.appendChild(cell);
+date.setDate(date.getDate()+1);
+}
+}
+
+function openModal(key,dateObj){
+editingKey=key;
+document.getElementById("modalDate").textContent=dateObj.toDateString();
+document.getElementById("modal").style.display="flex";
+}
+
+function closeModal(){document.getElementById("modal").style.display="none";}
+
+function saveDay(){
+let type=document.getElementById("personSelect").value;
+if(!type)return;
+data[editingKey]={type:type};
+save();
+closeModal();
+render();
+}
+
+function clearDay(){
+delete data[editingKey];
+save();
+closeModal();
+render();
+}
+
+function prevMonth(){current.setMonth(current.getMonth()-1);load();}
+function nextMonth(){current.setMonth(current.getMonth()+1);load();}
+
+function toggleDark(){
+document.body.classList.toggle("dark");
+localStorage.setItem("darkMode",document.body.classList.contains("dark"));
+}
+
+if(localStorage.getItem("darkMode")==="true"){
+document.body.classList.add("dark");
+}
+
+generateTimes();
+load();
+</script>
+
+</body>
+</html>
